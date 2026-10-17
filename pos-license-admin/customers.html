@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Customers | POS License Admin</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
+  </head>
+  <body>
+    <main class="page-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Dashboard</p>
+          <h1 class="page-title">Customer Management</h1>
+        </div>
+        <div class="topbar-actions">
+          <span id="userBadge" class="account-chip">Admin</span>
+          <button id="logoutBtn" class="ghost-btn" type="button">Logout</button>
+        </div>
+      </header>
+
+      <section id="statsGrid" class="stats-grid" aria-live="polite"></section>
+
+      <section class="panel">
+        <div class="toolbar">
+          <div class="search-group">
+            <input id="searchInput" type="search" placeholder="Search by name or email" />
+            <select id="statusFilter">
+              <option value="all">All statuses</option>
+              <option value="pending">Pending</option>
+              <option value="active">Active</option>
+              <option value="deactivated">Deactivated</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Full Name</th>
+                <th>Email</th>
+                <th>Activation Status</th>
+                <th>Account</th>
+              </tr>
+            </thead>
+            <tbody id="customerTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="js/auth.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/customers.js"></script>
+  </body>
+</html>

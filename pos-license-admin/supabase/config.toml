@@ -1,0 +1,6 @@
+[functions.validate-license]
+verify_jwt = true
+
+[auth.email.template.confirmation]
+subject = "Your Huzaifa Bytes verification code"
+content_path = "./supabase/templates/confirmation.html"
