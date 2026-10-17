@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login | POS License Admin</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
+  </head>
+  <body class="auth-body">
+    <main class="auth-shell">
+      <section class="auth-card compact-card">
+        <div class="brand-row">
+          <div class="brand-badge">P</div>
+          <div>
+            <p class="eyebrow">Secure access</p>
+            <h1>Owner Login</h1>
+          </div>
+        </div>
+
+        <form id="loginForm" class="stack-form">
+          <label>
+            <span>Email</span>
+            <input id="email" type="email" required />
+          </label>
+
+          <label>
+            <span>Password</span>
+            <input id="password" type="password" required />
+          </label>
+
+          <button type="submit" class="primary-btn">Continue</button>
+          <p id="authMessage" class="status-message" role="alert"></p>
+        </form>
+      </section>
+    </main>
+
+    <script src="js/auth.js"></script>
+  </body>
+</html>
