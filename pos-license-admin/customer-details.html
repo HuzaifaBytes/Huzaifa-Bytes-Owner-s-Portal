@@ -34,6 +34,18 @@
           <button class="secondary-btn" type="button" data-license-action="deactivate">Deactivate</button>
         </div>
       </section>
+
+      <section class="panel" style="margin-top: 1.25rem;">
+        <div class="toolbar">
+          <h2>Local Database Identity (LDI)</h2>
+        </div>
+        <div id="installationContainer"></div>
+        <p id="installationMessage" class="status-message" aria-live="polite"></p>
+        <div class="action-stack">
+          <button class="secondary-btn" type="button" data-installation-action="rebind">Approve rebind</button>
+          <button class="secondary-btn" type="button" data-installation-action="block">Block installation</button>
+        </div>
+      </section>
     </main>
 
     <div id="licenseModal" class="modal" aria-hidden="true">

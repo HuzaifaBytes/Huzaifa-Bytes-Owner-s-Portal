@@ -1,6 +1,8 @@
 let customerId = null;
 let currentAction = "activate";
 let currentProfile = null;
+let currentBinding = null;
+let currentBindingEvents = [];
 
 function escapeHTML(value) {
   return String(value ?? "").replace(/[&<>"']/g, (character) => ({
@@ -55,8 +57,46 @@ async function loadCustomerProfile() {
   }
 
   currentProfile = data;
+  const [{ data: binding, error: bindingError }, { data: events, error: eventsError }] = await Promise.all([
+    window.supabaseClient
+      .from("local_database_bindings")
+      .select("profile_id, registered_email, local_database_identity, status, bound_at, last_verified_at, last_attempted_ldi, last_attempt_at")
+      .eq("profile_id", customerId)
+      .maybeSingle(),
+    window.supabaseClient
+      .from("local_database_binding_events")
+      .select("action, previous_ldi, requested_ldi, details, created_at")
+      .eq("profile_id", customerId)
+      .order("created_at", { ascending: false })
+      .limit(20),
+  ]);
+  if (bindingError || eventsError) {
+    document.getElementById("detailContainer").textContent = "Unable to load installation identity history.";
+    return null;
+  }
+  currentBinding = binding || null;
+  currentBindingEvents = events || [];
   renderCustomerDetail(data);
   return data;
+}
+
+function formatIdentityDate(value) {
+  if (!value) return "Never";
+  const date = new Date(value);
+  return Number.isFinite(date.getTime()) ? date.toLocaleString() : "Unknown";
+}
+
+function getBindingStatusLabel(status) {
+  if (status === "bound") return "Bound";
+  if (status === "pending") return "Pending approval";
+  if (status === "blocked") return "Blocked";
+  return "Unbound";
+}
+
+function getBindingStatusClass(status) {
+  if (status === "bound") return "status-pill status-active";
+  if (status === "blocked") return "status-pill status-deactivated";
+  return "status-pill status-pending";
 }
 
 function renderCustomerDetail(row) {
@@ -73,12 +113,70 @@ function renderCustomerDetail(row) {
       <p><strong>Activation Status:</strong> <span class="${getStatusClass(status)}">${status === "deactivated" ? "Deactivated" : status === "active" ? "Active" : "Pending"}</span></p>
       <p><strong>License Duration:</strong> ${license.activation_days ? `${escapeHTML(license.activation_days)} days` : "Not set"}</p>
       <p><strong>Expires:</strong> ${escapeHTML(formatDate(license.expires_at))}</p>
+      <p><strong>Local Database Identity (LDI):</strong> ${escapeHTML(currentBinding?.local_database_identity || "Not bound")}</p>
+      <p><strong>Installation status:</strong> <span class="${getBindingStatusClass(currentBinding?.status)}">${escapeHTML(getBindingStatusLabel(currentBinding?.status))}</span></p>
+      <p><strong>Bound at:</strong> ${escapeHTML(formatIdentityDate(currentBinding?.bound_at))}</p>
+      <p><strong>Last verified:</strong> ${escapeHTML(formatIdentityDate(currentBinding?.last_verified_at))}</p>
+      <p><strong>Last different-installation attempt:</strong> ${escapeHTML(currentBinding?.last_attempted_ldi || "None recorded")}</p>
+      <p><strong>Last attempt time:</strong> ${escapeHTML(formatIdentityDate(currentBinding?.last_attempt_at))}</p>
     </div></div>
   `;
+  const installationContainer = document.getElementById("installationContainer");
+  if (installationContainer) {
+    installationContainer.innerHTML = currentBindingEvents.length
+      ? `<h3>Binding history</h3><div class="details-grid">${currentBindingEvents.map((event) => `
+        <article class="detail-card">
+          <p><strong>${escapeHTML(event.action.replaceAll("_", " "))}</strong></p>
+          <p>Previous LDI: ${escapeHTML(event.previous_ldi || "—")}</p>
+          <p>Requested LDI: ${escapeHTML(event.requested_ldi || "—")}</p>
+          <p>${escapeHTML(formatIdentityDate(event.created_at))}</p>
+        </article>`).join("")}</div>`
+      : "<p>No installation binding events recorded.</p>";
+  }
+  const installationMessage = document.getElementById("installationMessage");
+  if (installationMessage) {
+    installationMessage.textContent = "";
+    installationMessage.className = "status-message";
+  }
   document.querySelectorAll("[data-license-action]").forEach((button) => {
     const action = button.getAttribute("data-license-action");
     button.classList.toggle("hidden", (action === "activate" && status === "active") || (action === "extend" && status !== "active") || (action === "deactivate" && status !== "active"));
   });
+  document.querySelectorAll("[data-installation-action]").forEach((button) => {
+    const action = button.getAttribute("data-installation-action");
+    const hidden = action === "block"
+      ? currentBinding?.status !== "bound"
+      : currentBinding?.status === "pending";
+    button.classList.toggle("hidden", hidden);
+  });
+}
+
+async function handleInstallationAction(event) {
+  const action = event.currentTarget?.getAttribute("data-installation-action");
+  if (!customerId || (action !== "rebind" && action !== "block")) return;
+  const description = action === "rebind"
+    ? "Allow the next authenticated POS installation to bind to this account?"
+    : "Block this POS installation from validating this account?";
+  if (!window.confirm(description)) return;
+
+  const target = document.getElementById("installationMessage");
+  if (target) {
+    target.textContent = "Updating installation binding…";
+    target.className = "status-message";
+  }
+  const { error } = await window.supabaseClient.functions.invoke("manage-installation", {
+    body: { profileId: customerId, action },
+  });
+  if (error) {
+    if (target) {
+      target.textContent = error.message || "The installation action could not be completed.";
+      target.className = "status-message error";
+    }
+    return;
+  }
+
+  await loadCustomerProfile();
+  if (window.loadAdminDashboard) await window.loadAdminDashboard();
 }
 
 function getSelectedDays() {
@@ -211,5 +309,8 @@ window.addEventListener("DOMContentLoaded", async () => {
   }
 
   bindLicenseActions();
+  document.querySelectorAll("[data-installation-action]").forEach((button) => {
+    button.addEventListener("click", handleInstallationAction);
+  });
   await loadCustomerProfile();
 });

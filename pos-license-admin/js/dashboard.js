@@ -20,6 +20,12 @@ function getStatusClass(status) {
   }
 }
 
+function getBindingStatusClass(status) {
+  if (status === "bound") return "status-pill status-active";
+  if (status === "blocked") return "status-pill status-deactivated";
+  return "status-pill status-pending";
+}
+
 function getCustomerLicense(row) {
   if (Array.isArray(row.licenses) && row.licenses.length > 0) {
     return row.licenses[0];
@@ -46,12 +52,31 @@ async function loadAdminDashboard() {
     console.error(error);
     const target = document.getElementById("customerTableBody");
     if (target) {
-      target.innerHTML = `<tr><td colspan="4">Unable to load customer records. ${escapeHTML(error.message)}</td></tr>`;
+      target.innerHTML = `<tr><td colspan="5">Unable to load customer records. ${escapeHTML(error.message)}</td></tr>`;
     }
     return [];
   }
 
-  const rows = data || [];
+  const profiles = data || [];
+  const { data: bindings, error: bindingError } = profiles.length
+    ? await window.supabaseClient
+      .from("local_database_bindings")
+      .select("profile_id, local_database_identity, status, bound_at, last_verified_at, last_attempted_ldi, last_attempt_at")
+      .in("profile_id", profiles.map((profile) => profile.id))
+    : { data: [], error: null };
+
+  if (bindingError) {
+    console.error(bindingError);
+    const target = document.getElementById("customerTableBody");
+    if (target) target.innerHTML = `<tr><td colspan="5">Unable to load installation identity records.</td></tr>`;
+    return [];
+  }
+
+  const bindingByProfile = new Map((bindings || []).map((binding) => [binding.profile_id, binding]));
+  const rows = profiles.map((profile) => ({
+    ...profile,
+    installationBinding: bindingByProfile.get(profile.id) || null,
+  }));
   renderStats(rows);
   renderCustomersTable(rows);
   return rows;
@@ -96,6 +121,8 @@ function renderCustomersTable(rows) {
       row.full_name,
       row.email,
       status,
+      row.installationBinding?.local_database_identity,
+      row.installationBinding?.status,
     ].join(" ").toLowerCase();
 
     const matchesSearch = !search || haystack.includes(search);
@@ -104,7 +131,7 @@ function renderCustomersTable(rows) {
   });
 
   if (!visibleRows.length) {
-    tableBody.innerHTML = `<tr><td colspan="4">No matching customers found.</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="5">No matching customers found.</td></tr>`;
     return;
   }
 
@@ -116,6 +143,10 @@ function renderCustomersTable(rows) {
         <td>${escapeHTML(row.email || "—")}</td>
         <td>
           <span class="${getStatusClass(status)}">${status === "deactivated" ? "Deactivated" : status === "active" ? "Active" : "Pending"}</span>
+        </td>
+        <td>
+          <span class="${getBindingStatusClass(row.installationBinding?.status)}">${escapeHTML(row.installationBinding?.status === "bound" ? "Bound" : row.installationBinding?.status === "blocked" ? "Blocked" : row.installationBinding?.status === "pending" ? "Pending approval" : "Unbound")}</span>
+          <div class="ldi-value">${escapeHTML(row.installationBinding?.local_database_identity || "—")}</div>
         </td>
         <td>
           <button class="link-btn" type="button" data-customer-id="${escapeHTML(row.id)}">Manage</button>

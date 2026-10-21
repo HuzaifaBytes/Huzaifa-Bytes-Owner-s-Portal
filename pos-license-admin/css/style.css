@@ -123,6 +123,27 @@ input:focus, select:focus {
   outline: 2px solid rgba(37, 99, 235, 0.12);
 }
 
+.password-input-wrap { position: relative; display: block; }
+.password-input-wrap input { padding-right: 3.2rem; }
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.35rem;
+  display: grid;
+  width: 2.4rem;
+  height: 2.4rem;
+  place-items: center;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.password-toggle:hover { background: var(--card-alt); color: var(--text); }
+.password-toggle:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+.password-toggle svg { width: 1.1rem; height: 1.1rem; fill: none; stroke: currentColor; stroke-width: 1.8; }
+
 .primary-btn {
   border: none;
   border-radius: 10px;
@@ -267,6 +288,14 @@ th {
   letter-spacing: 0.07em;
   text-transform: uppercase;
   background: #f7fafc;
+}
+
+.ldi-value {
+  max-width: 24rem;
+  margin-top: 0.35rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
 }
 
 .status-pill {
