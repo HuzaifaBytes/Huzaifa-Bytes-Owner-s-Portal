@@ -47,7 +47,7 @@ async function loadCustomerProfile() {
 
   const { data, error } = await window.supabaseClient
     .from("profiles")
-    .select("id, full_name, email, license_status, licenses(status, expires_at, activation_days)")
+    .select("id, full_name, email, phone, license_status, licenses(status, expires_at, activation_days)")
     .eq("id", customerId)
     .single();
 
@@ -110,6 +110,7 @@ function renderCustomerDetail(row) {
     <div class="details-grid"><div class="detail-card">
       <p><strong>Full Name:</strong> ${escapeHTML(row.full_name || "—")}</p>
       <p><strong>Email:</strong> ${escapeHTML(row.email || "—")}</p>
+      <p><strong>WhatsApp Number:</strong> ${escapeHTML(row.phone || "—")}</p>
       <p><strong>Activation Status:</strong> <span class="${getStatusClass(status)}">${status === "deactivated" ? "Deactivated" : status === "active" ? "Active" : "Pending"}</span></p>
       <p><strong>License Duration:</strong> ${license.activation_days ? `${escapeHTML(license.activation_days)} days` : "Not set"}</p>
       <p><strong>Expires:</strong> ${escapeHTML(formatDate(license.expires_at))}</p>

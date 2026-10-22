@@ -47,7 +47,9 @@ openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-256 -out license-sign
 openssl pkey -in license-signing-private.pem -pubout -out license-verification-public.pem
 ```
 
-In Supabase Dashboard, add the contents of `license-signing-private.pem` as the Edge Function secret `LICENSE_SIGNING_PRIVATE_KEY`. `validate-license` also uses the Supabase Edge Function `SUPABASE_SERVICE_ROLE_KEY` server-side to atomically store binding/attempt records; the owner-only `manage-installation` function uses the same Edge Function secret to run authenticated rebind/block actions. These privileged keys must never be placed in POS build variables, the owner portal, or the desktop app. From this folder, link and deploy:
+In Supabase Dashboard, add the contents of the matching `license-signing-private.pem` as the Edge Function secret `LICENSE_SIGNING_PRIVATE_KEY`. For the current Windows release machine, the newly rotated private key is stored outside the repository at `%LOCALAPPDATA%\HuzaifaBytes\supabase-ldi-signing\license-signing-private.pem`; the matching public key is `license-verification-public.pem` at the workspace root and is bundled into the installer. Keep the private key in a secure secret manager and never commit it. Because the signing pair was rotated, previously released installers contain the old verifier and must be upgraded before they can validate newly signed entitlements.
+
+`validate-license` also uses the Supabase Edge Function `SUPABASE_SERVICE_ROLE_KEY` server-side to atomically store binding/attempt records; the owner-only `manage-installation` function uses the same Edge Function secret to run authenticated rebind/block actions. These privileged keys must never be placed in POS build variables, the owner portal, or the desktop app. Set both secrets in Supabase Dashboard → Edge Functions → Secrets, authenticate the Supabase CLI, and from this folder deploy:
 
 ```sh
 supabase login
